@@ -63,12 +63,26 @@ on Kubernetes dual-stack support see [Dual-stack support with kubeadm](/docs/set
     that has higher precedence than the kubeadm-provided kubelet unit file.
 
     ```sh
+    cat << EOF > /var/lib/kubelet/config.yaml
+    apiVersion: kubelet.config.k8s.io/v1beta1
+    kind: KubeletConfiguration
+    address: 127.0.0.1
+    staticPodPath: /etc/kubernetes/manifests
+    cgroupDriver: systemd
+    authentication:
+     anonymous:
+        enabled: true
+     webhook:
+        enabled: false
+    authorization:
+        mode: AlwaysAllow
+    EOF
+
     cat << EOF > /etc/systemd/system/kubelet.service.d/20-etcd-service-manager.conf
     [Service]
     ExecStart=
-    # Replace "systemd" with the cgroup driver of your container runtime. The default value in the kubelet is "cgroupfs".
     # Replace the value of "--container-runtime-endpoint" for a different container runtime if needed.
-    ExecStart=/usr/bin/kubelet --address=127.0.0.1 --pod-manifest-path=/etc/kubernetes/manifests --cgroup-driver=systemd --container-runtime=remote --container-runtime-endpoint=unix:///var/run/containerd/containerd.sock
+    ExecStart=/usr/bin/kubelet --config=/var/lib/kubelet/config.yaml --container-runtime=remote --container-runtime-endpoint=unix:///run/containerd/containerd.sock
     Restart=always
     EOF
 
